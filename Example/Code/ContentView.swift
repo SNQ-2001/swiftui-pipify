@@ -37,8 +37,18 @@ struct ContentView: View {
                     Text("Example Three")
                         .foregroundColor(.red)
                         .padding()
-                        .onPipSkip { _ in }
-                        .onPipPlayPause { _ in }
+                        .onPipSkip(
+                            isSkipEnabled: true,
+                            onSkip: { skipSecond in
+                                print("skip second: \(skipSecond)")
+                            }
+                        )
+                        .onPipSetPlaying(
+                            isSetPlayingEnabled: true,
+                            onSetPlaying: { isPlaying in
+                                print("Playing: \(isPlaying)")
+                            }
+                        )
                 }
             
             Button("Progress Bar") { isPresentedFour.toggle() }
