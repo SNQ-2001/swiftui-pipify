@@ -183,27 +183,27 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     
     public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("willStart")
-        onWillStartPip?()
+        onWillStart?()
     }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStart")
-        onDidStartPip?()
+        onDidStart?()
     }
     
     public func pictureInPictureControllerWillStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("willStop")
-        onWillStopPip?()
+        onWillStop?()
     }
     
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStop")
-        onDidStopPip?()
+        onDidStop?()
     }
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
         logger.error("failed to start: \(error.localizedDescription)")
-        onFailedToStartPip?(error)
+        onFailedToStart?(error)
     }
     
     public func pictureInPictureController(
