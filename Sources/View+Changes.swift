@@ -11,14 +11,14 @@ public extension View {
         onDidStart: (() -> Void)? = nil,
         onWillStop: (() -> Void)? = nil,
         onDidStop: (() -> Void)? = nil,
-        onFailedToStartPip: ((Error) -> Void)? = nil
+        onFailedToStart: ((Error) -> Void)? = nil
     ) -> some View {
         modifier(PipifyEventModifier(
             onWillStart: onWillStart,
             onDidStart: onDidStart,
             onWillStop: onWillStop,
             onDidStop: onDidStop,
-            onFailedToStartPip: onFailedToStartPip
+            onFailedToStartPip: onFailedToStart
         ))
     }
     
@@ -69,23 +69,23 @@ internal struct PipifyEventModifier: ViewModifier {
     let onDidStart: (() -> Void)?
     let onWillStop: (() -> Void)?
     let onDidStop: (() -> Void)?
-    let onFailedToStartPip: ((Error) -> Void)?
+    let onFailedToStart: ((Error) -> Void)?
     
     func body(content: Content) -> some View {
         content
             .onAppear {
-                controller.onWillStartPip = onWillStart
-                controller.onDidStartPip = onDidStart
-                controller.onWillStopPip = onWillStop
-                controller.onDidStopPip = onDidStop
-                controller.onFailedToStartPip = onFailedToStartPip
+                controller.onWillStart = onWillStart
+                controller.onDidStart = onDidStart
+                controller.onWillStop = onWillStop
+                controller.onDidStop = onDidStop
+                controller.onFailedToStart = onFailedToStart
             }
             .onDisappear {
-                controller.onWillStartPip = nil
-                controller.onDidStartPip = nil
-                controller.onWillStopPip = nil
-                controller.onDidStopPip = nil
-                controller.onFailedToStartPip = nil
+                controller.onWillStart = nil
+                controller.onDidStart = nil
+                controller.onWillStop = nil
+                controller.onDidStop = nil
+                controller.onFailedToStart = nil
             }
     }
 }

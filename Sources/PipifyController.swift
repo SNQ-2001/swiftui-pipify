@@ -18,11 +18,11 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     @Published public var renderSize: CGSize = .zero
     @Published public var isPlaying: Bool = true
     
-    public var onWillStartPip: (() -> Void)?
-    public var onDidStartPip: (() -> Void)?
-    public var onWillStopPip: (() -> Void)?
-    public var onDidStopPip: (() -> Void)?
-    public var onFailedToStartPip: ((Error) -> Void)?
+    public var onWillStart: (() -> Void)?
+    public var onDidStart: (() -> Void)?
+    public var onWillStop: (() -> Void)?
+    public var onDidStop: (() -> Void)?
+    public var onFailedToStart: ((Error) -> Void)?
     
     internal var isPlayPauseEnabled = false
     
