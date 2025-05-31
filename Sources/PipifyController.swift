@@ -23,8 +23,8 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         /// A style where all controls are completely hidden.
         case hidden = 2
 
-        /// A style where only the loading indicator is displayed.
-        case loadingOnly = 3
+        /// A style where the loading indicator is displayed.
+        case loading = 3
     }
     
     public var controlsStyle: ControlsStyle? {
