@@ -18,7 +18,12 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     @Published public var renderSize: CGSize = .zero
     @Published public var isPlaying: Bool = true
     
-    @Published public var enabled: Bool = false
+    public var onWillStartPip: (() -> Void)?
+    public var onDidStartPip: (() -> Void)?
+    public var onWillStopPip: (() -> Void)?
+    public var onDidStopPip: (() -> Void)?
+    public var onFailedToStartPip: ((Error) -> Void)?
+    
     internal var isPlayPauseEnabled = false
     
     internal var onSkip: ((Double) -> Void)? = nil {
@@ -175,25 +180,30 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     }
     
     // MARK: - AVPictureInPictureControllerDelegate
+    
+    public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        logger.info("willStart")
+        onWillStartPip?()
+    }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStart")
+        onDidStartPip?()
+    }
+    
+    public func pictureInPictureControllerWillStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        logger.info("willStop")
+        onWillStopPip?()
     }
     
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStop")
-        enabled = false
-    }
-    
-    public func pictureInPictureControllerShouldProhibitBackgroundAudioPlayback(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
-        // We do not support audio through the pipify controller, as such we will allow other background audio to
-        // continue playing
-        return false
+        onDidStopPip?()
     }
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
         logger.error("failed to start: \(error.localizedDescription)")
-        enabled = false
+        onFailedToStartPip?(error)
     }
     
     public func pictureInPictureController(
@@ -201,8 +211,13 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
     ) {
         logger.info("restore UI")
-        enabled = false
         completionHandler(true)
+    }
+    
+    public func pictureInPictureControllerShouldProhibitBackgroundAudioPlayback(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
+        // We do not support audio through the pipify controller, as such we will allow other background audio to
+        // continue playing
+        return false
     }
     
     // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate

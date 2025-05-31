@@ -5,6 +5,23 @@
 import SwiftUI
 
 public extension View {
+    @warn_unqualified_access
+    func pipEvents(
+        onWillStart: (() -> Void)? = nil,
+        onDidStart: (() -> Void)? = nil,
+        onWillStop: (() -> Void)? = nil,
+        onDidStop: (() -> Void)? = nil,
+        onFailedToStartPip: ((Error) -> Void)? = nil
+    ) -> some View {
+        modifier(PipifyEventModifier(
+            onWillStart: onWillStart,
+            onDidStart: onDidStart,
+            onWillStop: onWillStop,
+            onDidStop: onDidStop,
+            onFailedToStartPip: onFailedToStartPip
+        ))
+    }
+    
     /// When the user uses the play/pause button inside the picture-in-picture window, the provided closure is called.
     ///
     /// The `Bool` is true if playing, else paused.
@@ -63,6 +80,33 @@ public extension View {
     @warn_unqualified_access
     func pipBindProgress(progress: Binding<Double>) -> some View {
         modifier(PipifyProgressModifier(progress: progress))
+    }
+}
+
+internal struct PipifyEventModifier: ViewModifier {
+    @EnvironmentObject private var controller: PipifyController
+    let onWillStart: (() -> Void)?
+    let onDidStart: (() -> Void)?
+    let onWillStop: (() -> Void)?
+    let onDidStop: (() -> Void)?
+    let onFailedToStartPip: ((Error) -> Void)?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.onWillStartPip = onWillStart
+                controller.onDidStartPip = onDidStart
+                controller.onWillStopPip = onWillStop
+                controller.onDidStopPip = onDidStop
+                controller.onFailedToStartPip = onFailedToStartPip
+            }
+            .onDisappear {
+                controller.onWillStartPip = nil
+                controller.onDidStartPip = nil
+                controller.onWillStopPip = nil
+                controller.onDidStopPip = nil
+                controller.onFailedToStartPip = nil
+            }
     }
 }
 
