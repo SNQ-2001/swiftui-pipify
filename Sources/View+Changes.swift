@@ -49,8 +49,14 @@ public extension View {
     ///
     /// The `Bool` is true if forward, else backwards.
     @warn_unqualified_access
-    func onPipSkip(closure: @escaping (Bool) -> Void) -> some View {
-        modifier(PipifySkipModifier(closure: closure))
+    func onPipSkip(
+        isSkipEnabled: Bool,
+        onSkip: ((Double) -> Void)?
+    ) -> some View {
+        modifier(PipifySkipModifier(
+            isSkipEnabled: isSkipEnabled,
+            onSkip: onSkip
+        ))
     }
     
     /// When the application is moved to the foreground, and if picture-in-picture is active, stop it.
@@ -117,6 +123,24 @@ internal struct PipifySetPlayingModifier: ViewModifier {
     }
 }
 
+internal struct PipifySkipModifier: ViewModifier {
+    @EnvironmentObject var controller: PipifyController
+    let isSkipEnabled: Bool
+    let onSkip: ((Double) -> Void)?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.isSkipEnabled = isSkipEnabled
+                controller.onSkip = onSkip
+            }
+            .onDisappear {
+                controller.isSkipEnabled = false
+                controller.onSkip = nil
+            }
+    }
+}
+
 internal struct PipifyTransitionToRenderSizeModifier: ViewModifier {
     @EnvironmentObject private var controller: PipifyController
     let onDidTransitionToRenderSize: ((CGSize) -> Void)?
@@ -128,20 +152,6 @@ internal struct PipifyTransitionToRenderSizeModifier: ViewModifier {
             }
             .onDisappear {
                 controller.onDidTransitionToRenderSize = nil
-            }
-    }
-}
-
-internal struct PipifySkipModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .task {
-                controller.onSkip = { value in
-                    closure(value > 0) // isForward
-                }
             }
     }
 }
