@@ -23,10 +23,10 @@ public extension View {
     }
     
     @warn_unqualified_access
-    func pipSampleBufferPlaybackEvents(
+    func onPipTransitionToRenderSize(
         onDidTransitionToRenderSize: ((CGSize) -> Void)? = nil
     ) -> some View {
-        modifier(PipifySampleBufferPlaybackEventModifier(
+        modifier(PipifyTransitionToRenderSizeModifier(
             onDidTransitionToRenderSize: onDidTransitionToRenderSize
         ))
     }
@@ -35,8 +35,14 @@ public extension View {
     ///
     /// The `Bool` is true if playing, else paused.
     @warn_unqualified_access
-    func onPipPlayPause(closure: @escaping (Bool) -> Void) -> some View {
-        modifier(PipifyPlayPauseModifier(closure: closure))
+    func onPipSetPlaying(
+        isSetPlayingEnabled: Bool,
+        onSetPlaying: ((Bool) -> Void)?
+    ) -> some View {
+        modifier(PipifySetPlayingModifier(
+            isSetPlayingEnabled: isSetPlayingEnabled,
+            onSetPlaying: onSetPlaying
+        ))
     }
     
     /// When the user uses the skip forward/backward button inside the picture-in-picture window, the provided closure is called.
@@ -93,7 +99,25 @@ internal struct PipifyEventModifier: ViewModifier {
     }
 }
 
-internal struct PipifySampleBufferPlaybackEventModifier: ViewModifier {
+internal struct PipifySetPlayingModifier: ViewModifier {
+    @EnvironmentObject var controller: PipifyController
+    let isSetPlayingEnabled: Bool
+    let onSetPlaying: ((Bool) -> Void)?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.isSetPlayingEnabled = isSetPlayingEnabled
+                controller.onSetPlaying = onSetPlaying
+            }
+            .onDisappear {
+                controller.isSetPlayingEnabled = false
+                controller.onSetPlaying = nil
+            }
+    }
+}
+
+internal struct PipifyTransitionToRenderSizeModifier: ViewModifier {
     @EnvironmentObject private var controller: PipifyController
     let onDidTransitionToRenderSize: ((CGSize) -> Void)?
     
@@ -104,21 +128,6 @@ internal struct PipifySampleBufferPlaybackEventModifier: ViewModifier {
             }
             .onDisappear {
                 controller.onDidTransitionToRenderSize = nil
-            }
-    }
-}
-
-internal struct PipifyPlayPauseModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .task {
-                controller.isPlayPauseEnabled = true
-            }
-            .onChange(of: controller.isPlaying) { newValue in
-                closure(newValue)
             }
     }
 }

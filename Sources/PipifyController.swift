@@ -15,7 +15,7 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         AVPictureInPictureController.isPictureInPictureSupported()
     }
     
-    @Published public var isPlaying: Bool = true
+    var isPlaying: Bool = true
     
     public var onWillStart: (() -> Void)?
     public var onDidStart: (() -> Void)?
@@ -23,9 +23,9 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     public var onDidStop: (() -> Void)?
     public var onFailedToStart: ((Error) -> Void)?
     
+    public var isSetPlayingEnabled = false
+    public var onSetPlaying: ((Bool) -> Void)?
     public var onDidTransitionToRenderSize: ((CGSize) -> Void)?
-    
-    internal var isPlayPauseEnabled = false
     
     internal var onSkip: ((Double) -> Void)? = nil {
         didSet {
@@ -224,17 +224,16 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
-        if isPlayPauseEnabled {
-            DispatchQueue.main.async {
-                logger.info("setPlaying: \(playing)")
-                self.isPlaying = playing
-                pictureInPictureController.invalidatePlaybackState()
-            }
+        if isSetPlayingEnabled {
+            logger.info("setPlaying: \(playing)")
+            isPlaying = playing
+            onSetPlaying?(playing)
+            pictureInPictureController.invalidatePlaybackState()
         }
     }
     
     public func pictureInPictureControllerIsPlaybackPaused(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
-        return isPlayPauseEnabled && isPlaying == false
+        return isSetPlayingEnabled && isPlaying == false
     }
     
     public func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {
