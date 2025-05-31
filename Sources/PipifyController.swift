@@ -15,7 +15,6 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         AVPictureInPictureController.isPictureInPictureSupported()
     }
     
-    @Published public var renderSize: CGSize = .zero
     @Published public var isPlaying: Bool = true
     
     public var onWillStart: (() -> Void)?
@@ -23,6 +22,8 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     public var onWillStop: (() -> Void)?
     public var onDidStop: (() -> Void)?
     public var onFailedToStart: ((Error) -> Void)?
+    
+    public var onDidTransitionToRenderSize: ((CGSize) -> Void)?
     
     internal var isPlayPauseEnabled = false
     
@@ -272,7 +273,7 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions) {
         logger.trace("window resize: \(newRenderSize.width)x\(newRenderSize.height)")
-        renderSize = .init(width: Int(newRenderSize.width), height: Int(newRenderSize.height))
+        onDidTransitionToRenderSize?(CGSize(width: Int(newRenderSize.width), height: Int(newRenderSize.height)))
     }
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, skipByInterval skipInterval: CMTime) async {

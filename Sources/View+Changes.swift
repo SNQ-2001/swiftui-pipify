@@ -22,6 +22,15 @@ public extension View {
         ))
     }
     
+    @warn_unqualified_access
+    func pipSampleBufferPlaybackEvents(
+        onDidTransitionToRenderSize: ((CGSize) -> Void)? = nil
+    ) -> some View {
+        modifier(PipifySampleBufferPlaybackEventModifier(
+            onDidTransitionToRenderSize: onDidTransitionToRenderSize
+        ))
+    }
+    
     /// When the user uses the play/pause button inside the picture-in-picture window, the provided closure is called.
     ///
     /// The `Bool` is true if playing, else paused.
@@ -36,12 +45,6 @@ public extension View {
     @warn_unqualified_access
     func onPipSkip(closure: @escaping (Bool) -> Void) -> some View {
         modifier(PipifySkipModifier(closure: closure))
-    }
-    
-    /// When the render size of the picture-in-picture window is changed, the provided closure is called.
-    @warn_unqualified_access
-    func onPipRenderSizeChanged(closure: @escaping (CGSize) -> Void) -> some View {
-        modifier(PipifyRenderSizeModifier(closure: closure))
     }
     
     /// When the application is moved to the foreground, and if picture-in-picture is active, stop it.
@@ -90,6 +93,21 @@ internal struct PipifyEventModifier: ViewModifier {
     }
 }
 
+internal struct PipifySampleBufferPlaybackEventModifier: ViewModifier {
+    @EnvironmentObject private var controller: PipifyController
+    let onDidTransitionToRenderSize: ((CGSize) -> Void)?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.onDidTransitionToRenderSize = onDidTransitionToRenderSize
+            }
+            .onDisappear {
+                controller.onDidTransitionToRenderSize = nil
+            }
+    }
+}
+
 internal struct PipifyPlayPauseModifier: ViewModifier {
     @EnvironmentObject var controller: PipifyController
     let closure: (Bool) -> Void
@@ -100,18 +118,6 @@ internal struct PipifyPlayPauseModifier: ViewModifier {
                 controller.isPlayPauseEnabled = true
             }
             .onChange(of: controller.isPlaying) { newValue in
-                closure(newValue)
-            }
-    }
-}
-
-internal struct PipifyRenderSizeModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (CGSize) -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: controller.renderSize) { newValue in
                 closure(newValue)
             }
     }
