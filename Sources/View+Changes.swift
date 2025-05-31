@@ -38,26 +38,6 @@ public extension View {
         modifier(PipifySkipModifier(closure: closure))
     }
     
-    /// When picture-in-picture is started, the provided closure is called.
-    @warn_unqualified_access
-    func onPipStart(closure: @escaping () -> Void) -> some View {
-        modifier(PipifyStatusModifier(closure: { newValue in
-            if newValue {
-                closure()
-            }
-        }))
-    }
-    
-    /// When picture-in-picture is stopped, the provided closure is called.
-    @warn_unqualified_access
-    func onPipStop(closure: @escaping () -> Void) -> some View {
-        modifier(PipifyStatusModifier(closure: { newValue in
-            if newValue == false {
-                closure()
-            }
-        }))
-    }
-    
     /// When the render size of the picture-in-picture window is changed, the provided closure is called.
     @warn_unqualified_access
     func onPipRenderSizeChanged(closure: @escaping (CGSize) -> Void) -> some View {
@@ -132,18 +112,6 @@ internal struct PipifyRenderSizeModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onChange(of: controller.renderSize) { newValue in
-                closure(newValue)
-            }
-    }
-}
-
-internal struct PipifyStatusModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: controller.enabled) { newValue in
                 closure(newValue)
             }
     }

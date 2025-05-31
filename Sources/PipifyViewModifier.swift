@@ -40,9 +40,6 @@ internal struct PipifyModifier<PipView: View>: ViewModifier {
                     controller.stop()
                 }
             }
-            .onChange(of: controller.enabled) { newValue in
-                isPresented = newValue
-            }
             .task {
                 logger.trace("setting view content")
                 controller.setView(pipContent())
