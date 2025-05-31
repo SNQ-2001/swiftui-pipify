@@ -6,7 +6,16 @@ import SwiftUI
 
 public extension View {
     @warn_unqualified_access
-    func pipEvents(
+    func pipControlsStyle(
+        _ style: PipifyController.ControlsStyle
+    ) -> some View {
+        modifier(PipifyControlsStyleModifier(
+            controlsStyle: style
+        ))
+    }
+
+    @warn_unqualified_access
+    func onPipEvents(
         onWillStart: (() -> Void)? = nil,
         onDidStart: (() -> Void)? = nil,
         onWillStop: (() -> Void)? = nil,
@@ -75,6 +84,21 @@ public extension View {
     @warn_unqualified_access
     func pipBindProgress(progress: Binding<Double>) -> some View {
         modifier(PipifyProgressModifier(progress: progress))
+    }
+}
+
+internal struct PipifyControlsStyleModifier: ViewModifier {
+    @EnvironmentObject private var controller: PipifyController
+    let controlsStyle: PipifyController.ControlsStyle
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.controlsStyle = controlsStyle
+            }
+            .onDisappear {
+                controller.controlsStyle = nil
+            }
     }
 }
 

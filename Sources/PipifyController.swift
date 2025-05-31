@@ -15,6 +15,24 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         AVPictureInPictureController.isPictureInPictureSupported()
     }
     
+    /// https://stackoverflow.com/questions/66983901/how-to-hidden-the-play-pause-buttons-in-the-avpictureinpicturecontroller
+    public enum ControlsStyle: Int {
+        /// A minimal style where the Play and Pause controls are hidden.
+        case minimal = 1
+
+        /// A style where all controls are completely hidden.
+        case hidden = 2
+
+        /// A style where only the loading indicator is displayed.
+        case loadingOnly = 3
+    }
+    
+    public var controlsStyle: ControlsStyle? {
+        didSet {
+            pipController?.setValue(controlsStyle?.rawValue, forKey: "controlsStyle")
+        }
+    }
+    
     var isPlaying: Bool = true
     
     public var onWillStart: (() -> Void)?
