@@ -42,12 +42,7 @@ struct BasicExample: View {
         .task {
             await updateCounter()
         }
-        .onPipSetPlaying(
-            isSetPlayingEnabled: true,
-            onSetPlaying: { isPlaying in
-                print("Playback \(isPlaying ? "is playing" : "is not playing")")
-            }
-        )
+        .pipControlsStyle(.hidden)
     }
     
     private func updateCounter() async {
