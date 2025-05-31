@@ -18,7 +18,7 @@ public extension View {
             onDidStart: onDidStart,
             onWillStop: onWillStop,
             onDidStop: onDidStop,
-            onFailedToStartPip: onFailedToStart
+            onFailedToStart: onFailedToStart
         ))
     }
     
