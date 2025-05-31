@@ -15,20 +15,28 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         AVPictureInPictureController.isPictureInPictureSupported()
     }
     
-    @Published public var renderSize: CGSize = .zero
-    @Published public var isPlaying: Bool = true
+    var isPlaying: Bool = true
     
-    @Published public var enabled: Bool = false
-    internal var isPlayPauseEnabled = false
+    public var onWillStart: (() -> Void)?
+    public var onDidStart: (() -> Void)?
+    public var onWillStop: (() -> Void)?
+    public var onDidStop: (() -> Void)?
+    public var onFailedToStart: ((Error) -> Void)?
     
-    internal var onSkip: ((Double) -> Void)? = nil {
+    public var isSetPlayingEnabled = false
+    public var onSetPlaying: ((Bool) -> Void)?
+    
+    public var isSkipEnabled = false {
         didSet {
             // the pip controller is setup by the time the skip modifier changes this value
             // as such we update the pip controller after the fact
-            pipController?.requiresLinearPlayback = onSkip == nil
+            pipController?.requiresLinearPlayback = !isSkipEnabled
             pipController?.invalidatePlaybackState()
         }
     }
+    public var onSkip: ((Double) -> Void)?
+    
+    public var onDidTransitionToRenderSize: ((CGSize) -> Void)?
     
     internal var progress: Double = 1 {
         didSet {
@@ -76,8 +84,8 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         ))
         
         // Combined with a certain time range this makes it so the skip buttons are not visible / interactable.
-        // if an `onSkip` closure is provied then we don't do this
-        pipController?.requiresLinearPlayback = onSkip == nil
+        // if an `isSkipEnabled` is false then we don't do this
+        pipController?.requiresLinearPlayback = !isSkipEnabled
         
         pipController?.delegate = self
     }
@@ -175,14 +183,38 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     }
     
     // MARK: - AVPictureInPictureControllerDelegate
+    
+    public func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        logger.info("willStart")
+        onWillStart?()
+    }
 
     public func pictureInPictureControllerDidStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStart")
+        onDidStart?()
+    }
+    
+    public func pictureInPictureControllerWillStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
+        logger.info("willStop")
+        onWillStop?()
     }
     
     public func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
         logger.info("didStop")
-        enabled = false
+        onDidStop?()
+    }
+    
+    public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
+        logger.error("failed to start: \(error.localizedDescription)")
+        onFailedToStart?(error)
+    }
+    
+    public func pictureInPictureController(
+        _ pictureInPictureController: AVPictureInPictureController,
+        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
+    ) {
+        logger.info("restore UI")
+        completionHandler(true)
     }
     
     public func pictureInPictureControllerShouldProhibitBackgroundAudioPlayback(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
@@ -191,38 +223,23 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
         return false
     }
     
-    public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, failedToStartPictureInPictureWithError error: Error) {
-        logger.error("failed to start: \(error.localizedDescription)")
-        enabled = false
-    }
-    
-    public func pictureInPictureController(
-        _ pictureInPictureController: AVPictureInPictureController,
-        restoreUserInterfaceForPictureInPictureStopWithCompletionHandler completionHandler: @escaping (Bool) -> Void
-    ) {
-        logger.info("restore UI")
-        enabled = false
-        completionHandler(true)
-    }
-    
     // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
-        if isPlayPauseEnabled {
-            DispatchQueue.main.async {
-                logger.info("setPlaying: \(playing)")
-                self.isPlaying = playing
-                pictureInPictureController.invalidatePlaybackState()
-            }
+        if isSetPlayingEnabled {
+            logger.info("setPlaying: \(playing)")
+            isPlaying = playing
+            onSetPlaying?(playing)
+            pictureInPictureController.invalidatePlaybackState()
         }
     }
     
     public func pictureInPictureControllerIsPlaybackPaused(_ pictureInPictureController: AVPictureInPictureController) -> Bool {
-        return isPlayPauseEnabled && isPlaying == false
+        return isSetPlayingEnabled && isPlaying == false
     }
     
     public func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {
-        if onSkip == nil && progress == 1 {
+        if !isSkipEnabled && progress == 1 {
             // By returning a positive time range in conjunction with enabling `requiresLinearPlayback`
             // PIP will only show the play/pause button and hide the 'Live' label and skip buttons.
             return CMTimeRange(start: .init(value: 1, timescale: 1), end: .init(value: 2, timescale: 1))
@@ -257,7 +274,7 @@ public final class PipifyController: NSObject, ObservableObject, AVPictureInPict
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, didTransitionToRenderSize newRenderSize: CMVideoDimensions) {
         logger.trace("window resize: \(newRenderSize.width)x\(newRenderSize.height)")
-        renderSize = .init(width: Int(newRenderSize.width), height: Int(newRenderSize.height))
+        onDidTransitionToRenderSize?(CGSize(width: Int(newRenderSize.width), height: Int(newRenderSize.height)))
     }
     
     public func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, skipByInterval skipInterval: CMTime) async {

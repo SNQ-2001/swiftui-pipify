@@ -5,46 +5,58 @@
 import SwiftUI
 
 public extension View {
+    @warn_unqualified_access
+    func pipEvents(
+        onWillStart: (() -> Void)? = nil,
+        onDidStart: (() -> Void)? = nil,
+        onWillStop: (() -> Void)? = nil,
+        onDidStop: (() -> Void)? = nil,
+        onFailedToStart: ((Error) -> Void)? = nil
+    ) -> some View {
+        modifier(PipifyEventModifier(
+            onWillStart: onWillStart,
+            onDidStart: onDidStart,
+            onWillStop: onWillStop,
+            onDidStop: onDidStop,
+            onFailedToStart: onFailedToStart
+        ))
+    }
+    
+    @warn_unqualified_access
+    func onPipTransitionToRenderSize(
+        onDidTransitionToRenderSize: ((CGSize) -> Void)? = nil
+    ) -> some View {
+        modifier(PipifyTransitionToRenderSizeModifier(
+            onDidTransitionToRenderSize: onDidTransitionToRenderSize
+        ))
+    }
+    
     /// When the user uses the play/pause button inside the picture-in-picture window, the provided closure is called.
     ///
     /// The `Bool` is true if playing, else paused.
     @warn_unqualified_access
-    func onPipPlayPause(closure: @escaping (Bool) -> Void) -> some View {
-        modifier(PipifyPlayPauseModifier(closure: closure))
+    func onPipSetPlaying(
+        isSetPlayingEnabled: Bool,
+        onSetPlaying: ((Bool) -> Void)?
+    ) -> some View {
+        modifier(PipifySetPlayingModifier(
+            isSetPlayingEnabled: isSetPlayingEnabled,
+            onSetPlaying: onSetPlaying
+        ))
     }
     
     /// When the user uses the skip forward/backward button inside the picture-in-picture window, the provided closure is called.
     ///
     /// The `Bool` is true if forward, else backwards.
     @warn_unqualified_access
-    func onPipSkip(closure: @escaping (Bool) -> Void) -> some View {
-        modifier(PipifySkipModifier(closure: closure))
-    }
-    
-    /// When picture-in-picture is started, the provided closure is called.
-    @warn_unqualified_access
-    func onPipStart(closure: @escaping () -> Void) -> some View {
-        modifier(PipifyStatusModifier(closure: { newValue in
-            if newValue {
-                closure()
-            }
-        }))
-    }
-    
-    /// When picture-in-picture is stopped, the provided closure is called.
-    @warn_unqualified_access
-    func onPipStop(closure: @escaping () -> Void) -> some View {
-        modifier(PipifyStatusModifier(closure: { newValue in
-            if newValue == false {
-                closure()
-            }
-        }))
-    }
-    
-    /// When the render size of the picture-in-picture window is changed, the provided closure is called.
-    @warn_unqualified_access
-    func onPipRenderSizeChanged(closure: @escaping (CGSize) -> Void) -> some View {
-        modifier(PipifyRenderSizeModifier(closure: closure))
+    func onPipSkip(
+        isSkipEnabled: Bool,
+        onSkip: ((Double) -> Void)?
+    ) -> some View {
+        modifier(PipifySkipModifier(
+            isSkipEnabled: isSkipEnabled,
+            onSkip: onSkip
+        ))
     }
     
     /// When the application is moved to the foreground, and if picture-in-picture is active, stop it.
@@ -66,55 +78,80 @@ public extension View {
     }
 }
 
-internal struct PipifyPlayPauseModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
+internal struct PipifyEventModifier: ViewModifier {
+    @EnvironmentObject private var controller: PipifyController
+    let onWillStart: (() -> Void)?
+    let onDidStart: (() -> Void)?
+    let onWillStop: (() -> Void)?
+    let onDidStop: (() -> Void)?
+    let onFailedToStart: ((Error) -> Void)?
     
     func body(content: Content) -> some View {
         content
-            .task {
-                controller.isPlayPauseEnabled = true
+            .onAppear {
+                controller.onWillStart = onWillStart
+                controller.onDidStart = onDidStart
+                controller.onWillStop = onWillStop
+                controller.onDidStop = onDidStop
+                controller.onFailedToStart = onFailedToStart
             }
-            .onChange(of: controller.isPlaying) { newValue in
-                closure(newValue)
+            .onDisappear {
+                controller.onWillStart = nil
+                controller.onDidStart = nil
+                controller.onWillStop = nil
+                controller.onDidStop = nil
+                controller.onFailedToStart = nil
             }
     }
 }
 
-internal struct PipifyRenderSizeModifier: ViewModifier {
+internal struct PipifySetPlayingModifier: ViewModifier {
     @EnvironmentObject var controller: PipifyController
-    let closure: (CGSize) -> Void
+    let isSetPlayingEnabled: Bool
+    let onSetPlaying: ((Bool) -> Void)?
     
     func body(content: Content) -> some View {
         content
-            .onChange(of: controller.renderSize) { newValue in
-                closure(newValue)
+            .onAppear {
+                controller.isSetPlayingEnabled = isSetPlayingEnabled
+                controller.onSetPlaying = onSetPlaying
             }
-    }
-}
-
-internal struct PipifyStatusModifier: ViewModifier {
-    @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
-    
-    func body(content: Content) -> some View {
-        content
-            .onChange(of: controller.enabled) { newValue in
-                closure(newValue)
+            .onDisappear {
+                controller.isSetPlayingEnabled = false
+                controller.onSetPlaying = nil
             }
     }
 }
 
 internal struct PipifySkipModifier: ViewModifier {
     @EnvironmentObject var controller: PipifyController
-    let closure: (Bool) -> Void
+    let isSkipEnabled: Bool
+    let onSkip: ((Double) -> Void)?
     
     func body(content: Content) -> some View {
         content
-            .task {
-                controller.onSkip = { value in
-                    closure(value > 0) // isForward
-                }
+            .onAppear {
+                controller.isSkipEnabled = isSkipEnabled
+                controller.onSkip = onSkip
+            }
+            .onDisappear {
+                controller.isSkipEnabled = false
+                controller.onSkip = nil
+            }
+    }
+}
+
+internal struct PipifyTransitionToRenderSizeModifier: ViewModifier {
+    @EnvironmentObject private var controller: PipifyController
+    let onDidTransitionToRenderSize: ((CGSize) -> Void)?
+    
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                controller.onDidTransitionToRenderSize = onDidTransitionToRenderSize
+            }
+            .onDisappear {
+                controller.onDidTransitionToRenderSize = nil
             }
     }
 }

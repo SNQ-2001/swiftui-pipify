@@ -8,6 +8,7 @@ import SwiftUI
 struct BasicExample: View {
     @State var mode: Int = 0
     @State var counter: Int = 0
+    @State var renderSize: CGSize = .zero
     
     @EnvironmentObject var controller: PipifyController
     
@@ -16,10 +17,15 @@ struct BasicExample: View {
             switch mode {
             case 0:
                 VStack {
-                    Text("Width: \(Int(controller.renderSize.width))")
-                    Text("Height: \(Int(controller.renderSize.height))")
+                    Text("Width: \(Int(renderSize.width))")
+                    Text("Height: \(Int(renderSize.height))")
                 }
                 .foregroundColor(.green)
+                .onPipTransitionToRenderSize(
+                    onDidTransitionToRenderSize: { renderSize in
+                        self.renderSize = renderSize
+                    }
+                )
             case 1:
                 Text("Counter: \(counter)")
                     .foregroundColor(.blue)
@@ -36,9 +42,12 @@ struct BasicExample: View {
         .task {
             await updateCounter()
         }
-        .onPipPlayPause { isPlaying in
-            print("Playback \(isPlaying ? "is playing" : "is not playing")")
-        }
+        .onPipSetPlaying(
+            isSetPlayingEnabled: true,
+            onSetPlaying: { isPlaying in
+                print("Playback \(isPlaying ? "is playing" : "is not playing")")
+            }
+        )
     }
     
     private func updateCounter() async {
