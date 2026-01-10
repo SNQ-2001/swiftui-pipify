@@ -96,9 +96,6 @@ internal struct PipifyControlsStyleModifier: ViewModifier {
             .onAppear {
                 controller.controlsStyle = controlsStyle
             }
-            .onDisappear {
-                controller.controlsStyle = nil
-            }
     }
 }
 
